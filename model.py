@@ -269,6 +269,7 @@ def Vgg19_simple_api_gray(gray, reuse):
     Parameters
     -----------
     rgb : rgb image placeholder [batch, height, width, 3] values scaled [0, 1]
+    gray : gray image placeholder [batch, height, width, 1] values scaled [0, 1]
     """
     # VGG_MEAN = [103.939, 116.779, 123.68]
     with tf.variable_scope("VGG19", reuse=reuse) as vs:
