@@ -45,7 +45,7 @@ def train():
 
     ## If your machine have enough memory, please pre-load the whole train set.
     train_hr_imgs = tl.vis.read_images(train_hr_img_list, path=config.TRAIN.hr_img_path, n_threads=32)
-    train_hr_imgs = train_hr_images[0:720]
+    train_hr_imgs = train_hr_imgs[0:720]
     # for im in train_hr_imgs:
     #     print(im.shape)
     # valid_lr_imgs = tl.vis.read_images(valid_lr_img_list, path=config.VALID.lr_img_path, n_threads=32)
