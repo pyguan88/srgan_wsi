@@ -142,6 +142,7 @@ def train():
     tl.vis.save_images(sample_imgs_96, [ni, ni], save_dir_gan + '/_train_sample_96.png')
     tl.vis.save_images(sample_imgs_384, [ni, ni], save_dir_gan + '/_train_sample_384.png')
 
+    '''
     ###========================= initialize G ====================###
     ## fixed learning rate
     sess.run(tf.assign(lr_v, lr_init))
@@ -182,6 +183,7 @@ def train():
         ## save model
         if (epoch != 0) and (epoch % 10 == 0):
             tl.files.save_npz(net_g.all_params, name=checkpoint_dir + '/g_{}_init.npz'.format(tl.global_flag['mode']), sess=sess)
+    '''
 
     ###========================= train GAN (SRGAN) =========================###
     for epoch in range(0, n_epoch + 1):
