@@ -6,6 +6,7 @@ from datetime import datetime
 import numpy as np
 from time import localtime, strftime
 import logging, scipy
+import random
 
 import tensorflow as tf
 import tensorlayer as tl
@@ -39,13 +40,14 @@ def train():
 
     ###====================== PRE-LOAD DATA ===========================###
     # train_hr_img_list = sorted(tl.files.load_file_list(path=config.TRAIN.hr_img_path, regx='.*.png', printable=False))
-    train_hr_img_list = sorted(tl.files.load_file_list(path=config.TRAIN.hr_img_path, regx='.*.bmp', printable=False))
-    # train_lr_img_list = sorted(tl.files.load_file_list(path=config.TRAIN.lr_img_path, regx='.*.png', printable=False))
+    train_hr_img_list = sorted(tl.files.load_file_list(path=config.TRAIN.hr_img_path, regx='.*.png', printable=False))
+    train_lr_img_list = sorted(tl.files.load_file_list(path=config.TRAIN.lr_img_path, regx='.*.png', printable=False))
     # valid_hr_img_list = sorted(tl.files.load_file_list(path=config.VALID.hr_img_path, regx='.*.png', printable=False))
     # valid_lr_img_list = sorted(tl.files.load_file_list(path=config.VALID.lr_img_path, regx='.*.png', printable=False))
 
     ## If your machine have enough memory, please pre-load the whole train set.
     train_hr_imgs = tl.vis.read_images(train_hr_img_list, path=config.TRAIN.hr_img_path, n_threads=32)
+    train_lr_imgs = tl.vis.read_images(train_lr_img_list, path=config.TRAIN.lr_img_path, n_threads=32)
     # train_hr_imgs = train_hr_imgs[0:640]
     # for im in train_hr_imgs:
     #     print(im.shape)
@@ -131,18 +133,26 @@ def train():
 
     ###============================= TRAINING ===============================###
     ## use first `batch_size` of train set to have a quick test during training
-    sample_imgs = train_hr_imgs[0:batch_size]
-    # sample_imgs = tl.vis.read_images(train_hr_img_list[0:batch_size], path=config.TRAIN.hr_img_path, n_threads=32) # if no pre-load train set
-    sample_imgs_384 = tl.prepro.threading_data(sample_imgs, fn=crop_sub_imgs_fn, is_random=False)
+    row = random.randint(0, 254)
+    col = random.randint(0, 404)
+    sample_hr_imgs = train_hr_imgs[0:batch_size]
+    sample_lr_imgs = train_lr_imgs[0:batch_size]
+    sample_imgs_384 = tl.prepro.threading_data(sample_hr_imgs, fn = crop_sub_imgs, upper= row, left = col, size = 384)
     print('sample HR sub-image:', sample_imgs_384.shape, sample_imgs_384.min(), sample_imgs_384.max())
-    sample_imgs_96 = tl.prepro.threading_data(sample_imgs_384, fn=downsample_fn)
+    sample_imgs_96 = tl.prepro.threading_data(sample_lr_imgs, fn = crop_sub_imgs, upper= row, left = col, size = 96)
     print('sample LR sub-image:', sample_imgs_96.shape, sample_imgs_96.min(), sample_imgs_96.max())
+    # sample_imgs = train_hr_imgs[0:batch_size]
+    # sample_imgs = tl.vis.read_images(train_hr_img_list[0:batch_size], path=config.TRAIN.hr_img_path, n_threads=32) # if no pre-load train set
+    # sample_imgs_384 = tl.prepro.threading_data(sample_imgs, fn=crop_sub_imgs_fn, is_random=False)
+    # print('sample HR sub-image:', sample_imgs_384.shape, sample_imgs_384.min(), sample_imgs_384.max())
+    # sample_imgs_96 = tl.prepro.threading_data(sample_imgs_384, fn=downsample_fn)
+    # print('sample LR sub-image:', sample_imgs_96.shape, sample_imgs_96.min(), sample_imgs_96.max())
     tl.vis.save_images(sample_imgs_96, [ni, ni], save_dir_ginit + '/_train_sample_96.png')
     tl.vis.save_images(sample_imgs_384, [ni, ni], save_dir_ginit + '/_train_sample_384.png')
     tl.vis.save_images(sample_imgs_96, [ni, ni], save_dir_gan + '/_train_sample_96.png')
     tl.vis.save_images(sample_imgs_384, [ni, ni], save_dir_gan + '/_train_sample_384.png')
 
-    '''
+
     ###========================= initialize G ====================###
     ## fixed learning rate
     sess.run(tf.assign(lr_v, lr_init))
@@ -164,8 +174,12 @@ def train():
         ## If your machine have enough memory, please pre-load the whole train set.
         for idx in range(0, len(train_hr_imgs), batch_size):
             step_time = time.time()
-            b_imgs_384 = tl.prepro.threading_data(train_hr_imgs[idx:idx + batch_size], fn=crop_sub_imgs_fn, is_random=True)
-            b_imgs_96 = tl.prepro.threading_data(b_imgs_384, fn=downsample_fn)
+            # b_imgs_384 = tl.prepro.threading_data(train_hr_imgs[idx:idx + batch_size], fn=crop_sub_imgs_fn, is_random=True)
+            # b_imgs_96 = tl.prepro.threading_data(b_imgs_384, fn=downsample_fn)
+            row_idx = random.randint(0, 254)
+            col_idx = random.randint(0, 404)
+            b_imgs_384 = tl.prepro.threading_data(train_hr_imgs[idx:idx + batch_size], fn=crop_sub_imgs, upper=row_idx, left =col_idx, size=384)
+            b_imgs_96 = tl.prepro.threading_data(train_lr_imgs[idx:idx + batch_size], fn=crop_sub_imgs, upper=row_idx, left =col_idx, size=96)
             ## update G
             errM, _ = sess.run([mse_loss, g_optim_init], {t_image: b_imgs_96, t_target_image: b_imgs_384})
             print("Epoch [%2d/%2d] %4d time: %4.4fs, mse: %.8f " % (epoch, n_epoch_init, n_iter, time.time() - step_time, errM))
@@ -183,7 +197,7 @@ def train():
         ## save model
         if (epoch != 0) and (epoch % 10 == 0):
             tl.files.save_npz(net_g.all_params, name=checkpoint_dir + '/g_{}_init.npz'.format(tl.global_flag['mode']), sess=sess)
-    '''
+
 
     ###========================= train GAN (SRGAN) =========================###
     for epoch in range(0, n_epoch + 1):
@@ -214,8 +228,12 @@ def train():
         ## If your machine have enough memory, please pre-load the whole train set.
         for idx in range(0, len(train_hr_imgs), batch_size):
             step_time = time.time()
-            b_imgs_384 = tl.prepro.threading_data(train_hr_imgs[idx:idx + batch_size], fn=crop_sub_imgs_fn, is_random=True)
-            b_imgs_96 = tl.prepro.threading_data(b_imgs_384, fn=downsample_fn)
+            # b_imgs_384 = tl.prepro.threading_data(train_hr_imgs[idx:idx + batch_size], fn=crop_sub_imgs_fn, is_random=True)
+            # b_imgs_96 = tl.prepro.threading_data(b_imgs_384, fn=downsample_fn)
+            row_idx = random.randint(0, 254)
+            col_idx = random.randint(0, 404)
+            b_imgs_384 = tl.prepro.threading_data(train_hr_imgs[idx:idx + batch_size], fn=crop_sub_imgs, upper=row_idx, left =col_idx, size=384)
+            b_imgs_96 = tl.prepro.threading_data(train_lr_imgs[idx:idx + batch_size], fn=crop_sub_imgs, upper=row_idx, left =col_idx, size=96)
             ## update D
             errD, _ = sess.run([d_loss, d_optim], {t_image: b_imgs_96, t_target_image: b_imgs_384})
             ## update G

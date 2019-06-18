@@ -27,3 +27,13 @@ def downsample_fn(x):
     x = x - 1.
     # x = (x - 0.5)*2
     return x
+
+
+# crop image based on coordinates
+
+def crop_sub_imgs(x, upper, left, size = 96):
+    x = x[upper * int(size/96):upper * int(size/96) +size, left * int(size/96): left * int(size/96) +size]
+    x = x / (255. / 2.)
+    x = x - 1.
+    # x = (x - 0.5)*2
+    return x
