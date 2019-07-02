@@ -48,8 +48,8 @@ def train():
     ## If your machine have enough memory, please pre-load the whole train set.
     train_hr_imgs = tl.vis.read_images(train_hr_img_list, path=config.TRAIN.hr_img_path, n_threads=32)
     train_lr_imgs = tl.vis.read_images(train_lr_img_list, path=config.TRAIN.lr_img_path, n_threads=32)
-    train_hr_imgs = train_hr_imgs[0:608]
-    train_lr_imgs = train_lr_imgs[0:608]
+    # train_hr_imgs = train_hr_imgs[0:608]
+    # train_lr_imgs = train_lr_imgs[0:608]
     # for im in train_hr_imgs:
     #     print(im.shape)
     # valid_lr_imgs = tl.vis.read_images(valid_lr_img_list, path=config.VALID.lr_img_path, n_threads=32)
@@ -134,8 +134,10 @@ def train():
 
     ###============================= TRAINING ===============================###
     ## use first `batch_size` of train set to have a quick test during training
-    row = random.randint(0, 254)
-    col = random.randint(0, 404)
+    # row = random.randint(0, 254)
+    # col = random.randint(0, 404)
+    row = 127
+    col = 202
     sample_hr_imgs = train_hr_imgs[0:batch_size]
     sample_lr_imgs = train_lr_imgs[0:batch_size]
     sample_imgs_384 = tl.prepro.threading_data(sample_hr_imgs, fn = crop_sub_imgs, upper= row, left = col, size = 384)
